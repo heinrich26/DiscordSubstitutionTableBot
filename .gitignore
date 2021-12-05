@@ -1,0 +1,12 @@
+token_secret
+*_secret
+secret_*
+img_cache
+__pycache__
+out.png
+attachments.db
+*.db
+testing.html
+tiles.html
+test*.html
+test*

@@ -1,0 +1,26 @@
+{
+    "keys": {
+        "https://www.lilienthal-gymnasium-berlin.de/interna/vplan/Druck_Kla.htm": {
+            "id": 0,
+            "type": 0,
+            "mapper": ["lesson", "teacher", "subject", "replacing_teacher", "room", "info_text", "type_of_replacement"]
+        },
+        "https://willi-graf-gymnasium.de/": {
+            "id": 1,
+            "type": 1,
+            "inline_header": true,
+            "mapper": ["lesson", "replacing_teacher", "teacher", "subject", "room", "info_text"],
+            "event_cases": {
+                "Vorverlegt": ["vorverlegt", "vorziehung", "vorgezogen"],
+                "Raumänderung": ["raumänderung", "raumvertretung"],
+                "Vertretung": ["vertretung"],
+                "Entfall": ["entfällt", "fällt aus"],
+                "Aufgaben": ["aa in", "aa von"]
+            }
+        }
+    },
+    "types": {
+        "0": "untis-html",
+        "1": "dsb-mobile"
+    }
+}

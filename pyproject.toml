@@ -1,0 +1,23 @@
+[build-system]
+build-backend = "poetry.masonry.api"
+requires = ["poetry>=1.0.0"]
+
+[tool]
+[tool.poetry]
+authors = ["heinrich27"]
+description = "A discord bot that sends YOU the Replacements of the Day!"
+name = "DiscordSubstitutionTableBot"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+Pillow = "^8.3.2"
+beautifulsoup4 = "^4.10.0"
+discord = "^1.7.3"
+discord-py-slash-command = "^3.0.1"
+lxml = "^4.6.4"
+python = "^3.8"
+requests = "^2.26.0"
+dsbapi = {git = "https://github.com/heinrich26/DSBApi.git"}
+replit = "^3.2.4"
+Flask = "^2.0.1"
+[tool.poetry.dev-dependencies]

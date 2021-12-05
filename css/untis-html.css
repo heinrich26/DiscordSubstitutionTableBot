@@ -1,0 +1,46 @@
+@font-face {
+    font-family: "ArialRounded";
+    src: url("../fonts/arialrounded.woff") format("woff"),
+        url("../fonts/arialrounded.woff2") format("woff2");
+}
+
+body {
+    width: fit-content
+}
+
+body, font {
+    font-family: 'ArialRounded';
+}
+
+table:not([rules]){
+    display: none;
+}
+
+table[rules] {
+    background: rgba(0,0,0,0.1);
+    border-collapse: separate !important;
+    border-spacing: 0;
+    border: 3px solid black;
+    border-radius: 5px;
+}
+
+td {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+tr:not(:first-child) > td:nth-child(2) > font {
+    text-decoration: line-through;
+}
+
+td:nth-child(5){
+    display: none;
+}
+
+a {
+    color: #000000;
+}
+
+center {
+    width: fit-content;
+}
