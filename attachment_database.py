@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 IMG_RES = 320
 
 
-class ImageDatabase:
+class ImageDatabase(object):
     '''A Database, that stores Image Attachment Links'''
 
     def __init__(self, name: str = 'attachments.db'):
@@ -76,5 +76,6 @@ class ImageDatabase:
         self.database.commit()
 
     def __del__(self):
+        print('database closing...')
         self.database.commit()
         self.database.close()

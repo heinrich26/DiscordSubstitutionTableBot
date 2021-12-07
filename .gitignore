@@ -3,10 +3,9 @@ token_secret
 secret_*
 img_cache
 __pycache__
-out.png
+*.png
 attachments.db
 *.db
-testing.html
 tiles.html
 test*.html
 test*

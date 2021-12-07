@@ -1,12 +1,13 @@
 import os
-from discord import Embed, Message, Intents
+import json
+from discord import Embed, Intents
 from discord.ext import commands
-from typing import Tuple, List, Dict
+from typing import List, Dict
 from discord_slash import SlashCommand
 
 from attachment_database import ImageDatabase
-from timetable_parser import DEFAULT_URL, Page
-from replacement_types import ReplacementType, PlanPreview
+from timetable_parser import DEFAULT_URL, WILLI_URL, Page
+from replacement_types import ReplacementType
 from preview_factory import create_vplan_message
 from keep_alive import keep_alive
 
@@ -26,47 +27,9 @@ NO_REPLACEMENTS_EMBED.add_field(name='**Keine Vertretungen heute...**',
 NO_REPLACEMENTS_EMBED.set_footer(**DEFAULT_FOOTER)
 
 
-def build_plan(
-        key: str, replacements: ReplacementType,
-        preview: PlanPreview) -> Tuple[str, list, Embed, Tuple[bool, bool]]:
-    '''Returns everything needed to send a Substitutiontable as Message for the given Data'''
-    # embed = class_vplan(key, replacements)
-    embed = Embed(title=f'**Vertretungsplan der {key}**',
-                  description='Hier siehst du deine heutigen Vertretungen:')
-    embed.set_footer(**DEFAULT_FOOTER)
-
-    files: list = []
-    thumbnail = img_db.get_icon(key)
-
-    known_icon = isinstance(thumbnail, str)
-    if known_icon:
-        embed.set_thumbnail(url=thumbnail)
-    else:
-        embed.set_thumbnail(url=f'attachment://{thumbnail.filename}')
-        files.append(thumbnail)
-
-    generated_plan = isinstance(preview, str)
-
-    if preview is not None:
-        if generated_plan:
-            embed.set_image(url=preview)
-        else:
-            embed.set_image(url=f'attachment://{preview.filename}')
-            files.append(preview)
-
-    return key, files, embed, (known_icon, generated_plan)
-
-
-def update_database_from_msg(key: str, message: Message,
-                             bools: Tuple[bool, bool]) -> None:
-    '''Adds the Attachment Links from the given Message to the Database'''
-    if not bools[0]:
-        img_db.set_attachment(key, message.embeds[0].thumbnail.url)
-
-    if not bools[1]:
-        link = message.embeds[-1].image.url
-        img_db.set_attachment(key, link, liliplan.times[key])
-        liliplan.previews[key] = link
+# Read the Timetable Data - unused
+with open('pages.json', 'r', encoding='utf-8') as page_json:
+    PAGES: dict = json.loads(page_json.read())
 
 
 def sort_classes(classes: List[str]) -> List[str]:
@@ -100,7 +63,7 @@ if __name__ == "__main__":
     check_last_modified()
 
     img_db = ImageDatabase()
-    liliplan = Page(DEFAULT_URL, database=img_db)
+    liliplan = Page(WILLI_URL, database=img_db)
 
     bot = commands.Bot(intents=Intents.all(), command_prefix='/')
     slash = SlashCommand(bot, sync_commands=True)
@@ -109,6 +72,50 @@ if __name__ == "__main__":
     async def on_ready():
         """Called when the Bot is ready"""
         print(f"We've logged in as {bot.user}")
+
+    @slash.subcommand(base='vplan', name='add', subcommand_group='config', description='Fügt einen neuen Plan zum Server hinzu', subcommand_group_description='Verwalte die Pläne für diesen Server',
+        options=[
+            {
+                'name': 'plan_name',
+                'description': 'Name des neuen Plans',
+                'type': 3,
+                'required': True,
+            },
+            {
+                'name': 'seitentyp',
+                'description': 'Typ der Website',
+                'type': 4,
+                'required': True,
+                'choices': [{'name': name, 'value': int(id)} for id, name in PAGES['types'].items()]
+            },  
+            {
+                'name': 'seitenlink',
+                'description': 'Link zum Plan',
+                'type': 3,
+                'required': False,
+            },
+            {
+                'name': 'username',
+                'description': 'Anmeldename für die Seite',
+                'type': 3,
+                'required': False,
+            },
+            {
+                'name': 'password',
+                'description': 'Anmeldename für die Seite',
+                'type': 3,
+                'required': False,
+            },
+            {
+                'name': 'default',
+                'description': 'Den Plan als Standard setzen',
+                'type': 5,
+                'required': False
+            }],
+        connector={'seitentyp': 'page_type', 'seitenlink': 'link'})
+    async def add_plan(context, plan_name: str, page_type: int, link: str, username: str, password: str, default: bool=False):
+        ...
+        await context.send('Not yet implemented!')
 
     @slash.subcommand(
         base='vplan',
@@ -121,6 +128,7 @@ if __name__ == "__main__":
             'required': True
         }])
     async def send_plan(context, klasse):
+        """Sends the Substitution-Table for the given Class"""
         await context.defer()
         data = liliplan.get_plan_for_class(klasse)
 

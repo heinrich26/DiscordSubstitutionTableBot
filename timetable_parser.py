@@ -25,6 +25,7 @@ UNTIS_HTML: Final = 0
 DSB_MOBILE: Final = 1
 
 DEFAULT_URL: Final = tuple(PAGES.keys())[0]
+WILLI_URL: Final[str] = tuple(PAGES.keys())[1]
 
 DEFAULT_MAPPER: Final = ('type', 'class', 'lesson','subject', 'room',
                          'new_subject', 'new_teacher', 'teacher')
