@@ -82,6 +82,9 @@ if __name__ == "__main__":
         """Called when the Bot is ready"""
         print(f"We've logged in as {bot.user}")
 
+        exec_events.start()
+        exec_events.change_interval(minutes=15.0)
+
     @slash.subcommand(
         base='vplan',
         name='set_default',
@@ -211,8 +214,23 @@ if __name__ == "__main__":
             page_db.add_event(channel, t_stamp, klasse)
 
             await context.send(
-                f'Neues Event um {time} Uhr für Klasse: {klasse} im Channel **#-{channel.name}** hinzugefüt!'
+                f'Neues Event um {time} Uhr für Klasse: {klasse} im Channel **#-{channel.name}** ({channel.id}) hinzugefüt!'
             )
+
+    async def _send_plan(context, klasse, silent: bool = False):
+        plan_id: int = page_db.get_server_default(context.guild)
+        plan: Page = plans[plan_id]
+        data = plan.get_plan_for_class(klasse)
+
+        if data is None or data[1] is {}:
+            # Send, if we dont ignore empty Tables
+            if not silent:
+                await context.send(embed=NO_REPLACEMENTS_EMBED)
+        else:
+            klasse: str = data[0]
+            date_str: str = plan.times.get(klasse)
+            for msg in create_vplan_message(data[1], klasse, img_db, date_str):
+                await context.send(**msg)
 
     @slash.subcommand(
         base='vplan',
@@ -224,22 +242,10 @@ if __name__ == "__main__":
             'type': 3,
             'required': True
         }])
-    async def send_plan(context, klasse, silent=False):
+    async def send_plan(context, klasse):
         """Sends the Substitution-Table for the given Class"""
         await context.defer()
-        plan_id: int = page_db.get_server_default(context.guild)
-        plan: Page = plans[plan_id]
-        data = plan.get_plan_for_class(klasse)
-
-        if data is None or data[1] is {}:
-            # Send, if we dont ignore empty Tables
-            if not silent:
-                await context.send(embed=NO_REPLACEMENTS_EMBED)
-        else:
-            klasse: str = data[0]
-            date: str = plan.times.get(klasse)
-            for msg in create_vplan_message(data[1], klasse, img_db, date):
-                await context.send(**msg)
+        await _send_plan(context, klasse)
 
     @slash.subcommand(
         base='vplan',
@@ -259,14 +265,7 @@ if __name__ == "__main__":
         info_embed.set_footer(**DEFAULT_FOOTER)
         await context.send(embed=info_embed)
 
-    @slash.subcommand(
-        base='vplan',
-        name='all',
-        description=
-        'Schickt ALLE Vertretungen — Nervig & sollte vermieden werden!!!')
-    async def send_plan_for_all(context):
-        """Sends all replacements, quite annoying!"""
-        await context.defer()
+    async def _send_plan_for_all(context):
         plan_id: int = page_db.get_server_default(context.guild)
         plan: Page = plans[plan_id]
 
@@ -279,33 +278,41 @@ if __name__ == "__main__":
         else:
             first: bool = True
             for klasse, events in replacements.items():
-                date: str = plan.times.get(klasse)
-                for msg in create_vplan_message(events, klasse, img_db, date,
+                date_str: str = plan.times.get(klasse)
+                for msg in create_vplan_message(events, klasse, img_db, date_str,
                                                 False):
                     if first:
-                        msg['content'] = f"**Vertretungsplan der ganzen Schule für den {'heutigen Tag' if date is None else date.split(' ')[0]}:**\n\n" + msg[
+                        msg['content'] = f"**Vertretungsplan der ganzen Schule für den {'heutigen Tag' if date_str is None else date_str.split(' ')[0]}:**\n\n" + msg[
                             'content']
                         await context.send(**msg)
                         first = False
                     else:
                         await context.send(**msg)
 
+    @slash.subcommand(
+        base='vplan',
+        name='all',
+        description=
+        'Schickt ALLE Vertretungen — Nervig & sollte vermieden werden!!!')
+    async def send_plan_for_all(context):
+        """Sends all replacements, quite annoying!"""
+        await context.defer()
+        await _send_plan_for_all(context)
+
+
+
     ctime = datetime.now(TIMEZONE)
 
     @tasks.loop(minutes=15 - ctime.minute % 15, seconds=60 - ctime.second)
-    # @tasks.loop(minutes=0, seconds=60 - ctime.second)
+    # @tasks.loop(minutes=0, seconds=5.0)
     async def exec_events():
-        print('looping')
 
         ctime = datetime.now(TIMEZONE)
 
         if ctime.date().weekday() == 5: return  # samstag ist freitag
-
-        print(page_db.events)
         
     
         cur_min: int = round(ctime.hour * 4 + ctime.minute / 15)
-        print(cur_min)
 
         events = page_db.events.get(cur_min)
         if events is None: return
@@ -313,20 +320,30 @@ if __name__ == "__main__":
         for event in events:
             if isinstance(event[0], int):  # deal with channel and guild id
                 try:
-                    channel: Messageable = bot.get_guild(event[0]).get_channel(event[1])
-                except AttributeError:
+                    channel: Messageable = bot.get_channel(event[1])
+                except AttributeError as error:
+                    print(error)
+                    print('nix gefunden warum bin ich dumm?', event)
                     page_db.delete_event(event[0], event[1], cur_min, event[2])
+                    continue
             else:
                 channel = event[0]
             _class: str = event[2]
+            try:    
+                context = await bot.get_context(await channel.fetch_message(channel.last_message_id))
+            except:
+                continue
+            if not context.valid: continue
 
             if _class is None:
-                await send_plan_for_all(channel)
+                await _send_plan_for_all(context)
             else:
-                await send_plan(channel, _class, silent=True)
+                await _send_plan(context, _class, silent=True)
 
-    exec_events.start()
-    exec_events.change_interval(minutes=15.0)
+
+
+
+    # @slash.subcommand()
 
     #         elif args[1] in ('help', 'h'):  # send an info message to the channel
     #             async with msg.channel.typing():

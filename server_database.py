@@ -29,8 +29,9 @@ class PageDatabase:
             self.cursor.execute(
                 'CREATE TABLE servers (guild_id INT NOT NULL PRIMARY KEY, page_id INT NOT NULL)'
             )
+            # self.cursor.execute('DROP TABLE events')
             self.cursor.execute(
-                'CREATE TABLE events (guild_id INT NOT NULL, channel_id INT NOT NULL, time INT NOT NULL, class_id INT, PRIMARY KEY (guild_id, channel_id, time, class_id))'
+                'CREATE TABLE events (guild_id INT NOT NULL, channel_id INT NOT NULL, time INT NOT NULL, class_id TEXT, PRIMARY KEY (guild_id, channel_id, time, class_id))'
             )
 
         self.server_mapper = {
@@ -41,7 +42,7 @@ class PageDatabase:
 
         self.events = {}
         for guild_id, channel_id, time, class_id in self.cursor.execute(
-        'SELECT * FROM events').fetchall():
+        'SELECT guild_id, channel_id, time, class_id FROM events').fetchall():
             if time in self.events:
                 self.events[time].append((guild_id, channel_id, class_id))
             else:
