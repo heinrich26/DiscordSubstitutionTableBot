@@ -89,28 +89,31 @@ if __name__ == "__main__":
         exec_events.start()
         exec_events.change_interval(minutes=15.0)
 
-    @slash.slash(name='vplan', description='Everything Substitution Table')
-    async def vplan(context):
-        await context.send('Falscher Command mann')
+    @slash.subcommand(base='vplan', subcommand_group='mgroup', name='mycmd', description='useless', sub_group_desc='Hi')
+    async def dummi(context):
+        await context.send('aye')
 
     @slash.subcommand(
         base='vplan',
-        name='set_default',
+        name='set-default',
         description=
         'Setze den Plan der auf diesem Server standardmäßig angezeigt werden soll',
         subcommand_group='config',
         options=[{
             'name':
             'plan_id',
-            'type': 4,
-            'description': 'Name der Schule',
+            'type':
+            4,
+            'description':
+            'Name der Schule',
             'required': True,
             'choices': [{
                 'name': page['name'],
                 'value': page['id']
             } for page in PAGES['keys'].values()]
-        }], subcommand_group_description='Verwalte die Pläne für diesen Server')
-    async def set_server_default(context, plan_id: int):
+        }],
+        subcommand_group_description='Verwalte die Pläne für diesen Server')
+    async def conf_server_default(context, plan_id: int):
         page_db.config_server(context.guild, plan_id)
         for page in PAGES['keys'].values():
             if page['id'] == plan_id:
@@ -176,13 +179,14 @@ if __name__ == "__main__":
 
     @slash.subcommand(
         base='vplan',
-        name='add_event',
+        name='add-event',
         subcommand_group='config',
         description='Plant ein neues Event auf diesem Server',
+        subcommand_group_description='Verwalte die Pläne für diesen Server',
         options=[{
             'name': 'time',
             'description':
-            'Uhrzeit, zu welcher gesendet wird (gerundet auf 1/4h, Format: hh:mm)',
+            'Uhreit, zu welcher gesendet wird (gerundet auf 1/4h, Format: hh:mm)',
             'type': 3,
             'required': True,
         }, {
@@ -197,7 +201,7 @@ if __name__ == "__main__":
             'type': 7,
             'required': False
         }])
-    async def add_guild_event(context,
+    async def add_event(context,
                         time: str,
                         klasse: str = None,
                         channel: Messageable = None):
@@ -323,13 +327,21 @@ if __name__ == "__main__":
 
 
 
-    ctime = datetime.now(TIMEZONE)
+    cur_time = datetime.now(TIMEZONE)
+
     
     # @tasks.loop(seconds=10.0)
-    @tasks.loop(minutes=15 - ctime.minute % 15, seconds=60 - ctime.second)
+    @tasks.loop(minutes=15 - cur_time.minute % 15 + (60 - cur_time.second)/60)
     async def exec_events():
+        if exec_events.current_loop == 0:
+            exec_events.change_interval(minutes=15.0)
+            return
+        if exec_events.current_loop == 1:
+            
+            ...
 
         ctime = datetime.now(TIMEZONE)
+        print(ctime)
 
         if ctime.date().weekday() == 5: return  # samstag ist freitag
         
