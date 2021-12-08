@@ -3,11 +3,13 @@
         "https://www.lilienthal-gymnasium-berlin.de/interna/vplan/Druck_Kla.htm": {
             "id": 0,
             "type": 0,
+            "name": "Lilienthal Gymnasium Berlin",
             "mapper": ["lesson", "teacher", "subject", "replacing_teacher", "room", "info_text", "type_of_replacement"]
         },
         "https://willi-graf-gymnasium.de/": {
             "id": 1,
             "type": 1,
+            "name": "Willi Graf Gymnasium Berlin",
             "inline_header": true,
             "mapper": ["lesson", "replacing_teacher", "teacher", "subject", "room", "info_text"],
             "event_cases": {

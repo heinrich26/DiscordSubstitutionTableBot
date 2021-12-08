@@ -31,13 +31,6 @@ DEFAULT_MAPPER: Final = ('type', 'class', 'lesson','subject', 'room',
                          'new_subject', 'new_teacher', 'teacher')
 
 
-# construct the absolute path for the fonts
-FONT_A = os.path.join(
-    os.getcwd(), 'fonts/arialrounded.woff').replace('\\', '/')
-FONT_B = os.path.join(
-    os.getcwd(), 'fonts/arialrounded.woff2').replace('\\', '/')
-
-
 
 def load_credentials(id: str):
     uname = os.environ.get(f'{id}_uname')

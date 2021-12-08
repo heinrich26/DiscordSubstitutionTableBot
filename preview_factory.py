@@ -4,19 +4,19 @@ from discord import Embed, Color
 from replacement_types import ReplacementType
 from attachment_database import ImageDatabase
 
-
 # Read the Timetable Data - unused
 with open('pages.json', 'r', encoding='utf-8') as page_json:
     PAGES: Final[dict] = json.loads(page_json.read())['keys']
-
 
 REPLACED: Final = ('vertretung', 'betreuung')
 OMITTED: Final = ('entfall', 'eva', 'aufgaben')
 ROOM_REPLACEMENT: Final = ('raumvertretung', 'raumänderung', 'raum-vtr.')
 EARLIER: Final = ('vorverlegt')
+INFO: Final = ('Info')
 
 event_types = ((REPLACED, Color.blue()), (OMITTED, Color.red()),
-               (ROOM_REPLACEMENT, Color.orange()), (EARLIER, Color.green()))
+               (ROOM_REPLACEMENT, Color.orange()), (EARLIER, Color.green()),
+               (INFO, Color.teal()))
 
 DEFAULT_FOOTER = {'text': 'Alle Angaben ohne Gewähr! Aber mit Gewehr. '}
 
@@ -24,7 +24,8 @@ UNKNOWNS_FILE = open('unknowns.txt', 'r+')
 
 
 def __del__():
-  print('i have to go')
+    print('i have to go')
+
 
 def write_unknown(event_type: str):
     with open('unknowns.txt', 'a') as f:
@@ -34,7 +35,6 @@ def write_unknown(event_type: str):
 def get_color(event_type: str) -> Color:
     '''Determines the color from the given Event Type'''
     _event_type = event_type.lower()
-    print(event_type)
     for event in event_types:
         if _event_type in event[0]:
             return event[1]
