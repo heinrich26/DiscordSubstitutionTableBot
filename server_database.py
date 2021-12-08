@@ -10,8 +10,7 @@ class PageDatabase:
     '''A Database, that stores Guild Data and Subsitution Table credentials'''
 
     server_mapper: Dict[int, int]
-    events: Dict[int, List[Union[Tuple[Messageable, str], Tuple[int, int,
-                                                                str]]]]
+    events: Dict[int, List[Union[Tuple[Messageable, str], Tuple[int, str]]]]
     cursor: Cursor
 
     def __init__(self, name: str = 'webpages.db'):
@@ -31,8 +30,8 @@ class PageDatabase:
             )
             # self.cursor.execute('DROP TABLE events')
             self.cursor.execute(
-                'CREATE TABLE events (guild_id INT NOT NULL, channel_id INT NOT NULL, time INT NOT NULL, class_id TEXT, PRIMARY KEY (guild_id, channel_id, time, class_id))'
-            )
+                    'CREATE TABLE events (channel_id INT NOT NULL, time INT NOT NULL, class_id TEXT, PRIMARY KEY (channel_id, time, class_id))'
+                )
 
         self.server_mapper = {
             name: id
@@ -41,12 +40,12 @@ class PageDatabase:
         } if not create_tables else {}
 
         self.events = {}
-        for guild_id, channel_id, time, class_id in self.cursor.execute(
-        'SELECT guild_id, channel_id, time, class_id FROM events').fetchall():
+        for channel_id, time, class_id in self.cursor.execute(
+        'SELECT channel_id, time, class_id FROM events').fetchall():
             if time in self.events:
-                self.events[time].append((guild_id, channel_id, class_id))
+                self.events[time].append((channel_id, class_id))
             else:
-                self.events[time] = [(guild_id, channel_id, class_id)]
+                self.events[time] = [(channel_id, class_id)]
 
     def get_page(self, plan_name: str, plan_type: int) -> str:
         '''Request the URL for a plan from the Database'''
@@ -99,8 +98,8 @@ class PageDatabase:
     def add_event(self, channel: Messageable, time: int,
                   class_id: Optional[str]):
         self.cursor.execute(
-            'REPLACE INTO events (guild_id, channel_id, time, class_id) VALUES (?, ?, ?, ?)',
-            (channel.guild.id, channel.id, time, class_id))
+            'REPLACE INTO events (channel_id, time, class_id) VALUES (?, ?, ?)',
+            (channel.id, time, class_id))
         if time in self.events:
             self.events[time].append((channel, class_id))
         else:
@@ -111,8 +110,8 @@ class PageDatabase:
     def delete_event(self, guild_id: int, channel_id: int, time: int,
                      class_id: int):
         self.cursor.execute(
-            'DELETE FROM events WHERE events.guild_id = ? and events.channel_id = ? and events.time = ? and events.class_id = ?',
-            (guild_id, channel_id, time, class_id))
+            'DELETE FROM events WHERE events.channel_id = ? and events.time = ? and events.class_id = ?',
+            (channel_id, time, class_id))
 
         self.database.commit()
 

@@ -1,12 +1,13 @@
 import os
 import json
 from typing import List, Dict
-from datetime import date, datetime
+from datetime import datetime
 from pytz import timezone
-from discord import Embed, Intents
+from discord import Embed, Intents, Webhook, Forbidden, TextChannel
 from discord.abc import Messageable
 from discord.ext import commands, tasks
 from discord_slash import SlashCommand
+from discord_slash.utils.manage_components import create_actionrow, create_select, create_select_option
 
 from attachment_database import ImageDatabase
 from server_database import PageDatabase
@@ -31,6 +32,9 @@ NO_REPLACEMENTS_EMBED.add_field(name='**Keine Vertretungen heute...**',
 NO_REPLACEMENTS_EMBED.set_footer(**DEFAULT_FOOTER)
 
 TIMEZONE = timezone('Europe/Berlin')
+
+
+EVENTS_COMPONENT_ID: int = 10
 
 # Read the Timetable Data - unused
 with open('pages.json', 'r', encoding='utf-8') as page_json:
@@ -172,7 +176,7 @@ if __name__ == "__main__":
 
     @slash.subcommand(
         base='vplan',
-        name='add-event',
+        name='add_event',
         subcommand_group='config',
         description='Plant ein neues Event auf diesem Server',
         subcommand_group_description='Verwalte die Pläne für diesen Server',
@@ -214,7 +218,7 @@ if __name__ == "__main__":
             page_db.add_event(channel, t_stamp, klasse)
 
             await context.send(
-                f'Neues Event um {time} Uhr für Klasse: {klasse} im Channel **#-{channel.name}** ({channel.id}) hinzugefüt!'
+                f'Neues Event um {time} Uhr für Klasse: {klasse} im Channel **#-{channel.name}** hinzugefügt!'
             )
 
     async def _send_plan(context, klasse, silent: bool = False):
@@ -300,11 +304,30 @@ if __name__ == "__main__":
         await _send_plan_for_all(context)
 
 
+    # @slash.subcommand(base='vplan', name='list-events', description='Zeigt alle für diesen Server geplanten Events')
+    # async def prnt_events(context):
+    #     """Sends all configured events for this guild"""
+    #     await context.defer()
+    #     channel_ids: List[int] = [channel.id for channel in context.guild.channels if isinstance(channel, TextChannel)]
+    #     # events_for_server = [(c_time, *events) for c_time, event in page_db.events.items() if event[0] in channel_ids]
+
+    #     def mk_time(comp_time: int) -> str:
+    #         h, m = divmod(comp_time, 4)
+    #         return f"{h:d}:{15*m:02d}"
+
+    #     select_menu = create_select(options=[create_select_option(f"{mk_time(c_time)}: **#-{bot.get_channel(event[0]).name}**", value=f'{c_time};{event[0]};{event[1]}') for c_time, event in page_db.events.items() if event[0] in channel_ids], custom_id=EVENTS_COMPONENT_ID)
+
+    #     select_menu['max_values'] = len(select_menu)
+    #     # disassemble with str.split(';', 2)
+
+    #     await context.send('**Events auf diesem Server:**\nWähle Events aus um sie zu löschen!', component=create_actionrow(select_menu))
+
+
 
     ctime = datetime.now(TIMEZONE)
-
+    
+    # @tasks.loop(seconds=10.0)
     @tasks.loop(minutes=15 - ctime.minute % 15, seconds=60 - ctime.second)
-    # @tasks.loop(minutes=0, seconds=5.0)
     async def exec_events():
 
         ctime = datetime.now(TIMEZONE)
@@ -313,6 +336,7 @@ if __name__ == "__main__":
         
     
         cur_min: int = round(ctime.hour * 4 + ctime.minute / 15)
+        # cur_min = 14
 
         events = page_db.events.get(cur_min)
         if events is None: return
@@ -320,20 +344,28 @@ if __name__ == "__main__":
         for event in events:
             if isinstance(event[0], int):  # deal with channel and guild id
                 try:
-                    channel: Messageable = bot.get_channel(event[1])
+                    channel: Messageable = bot.get_channel(event[0])
                 except AttributeError as error:
                     print(error)
                     print('nix gefunden warum bin ich dumm?', event)
-                    page_db.delete_event(event[0], event[1], cur_min, event[2])
+                    page_db.delete_event(event[0], cur_min, event[1])
                     continue
             else:
                 channel = event[0]
-            _class: str = event[2]
-            try:    
-                context = await bot.get_context(await channel.fetch_message(channel.last_message_id))
-            except:
-                continue
-            if not context.valid: continue
+            _class: str = event[1]
+            context: Webhook = None
+            for hook in await channel.webhooks():
+                if hook.user == bot.user or 'vertretung' in hook.name.lower():
+                    # our webhook / already existing Webhook
+                    context = hook
+                    break
+
+            if context is None: # Create a new webhook
+                try:
+                    context = await channel.create_webhook(name=bot.name, avatar = await bot.user.avatar_url.read())
+                except Forbidden:
+                    channel.send('Not enough permissions to send create a Webhook, you gotta send the plan yourself')
+                    return
 
             if _class is None:
                 await _send_plan_for_all(context)
