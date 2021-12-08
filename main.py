@@ -89,6 +89,10 @@ if __name__ == "__main__":
         exec_events.start()
         exec_events.change_interval(minutes=15.0)
 
+    @slash.slash(name='vplan', description='Everything Substitution Table')
+    async def vplan(context):
+        await context.send('Falscher Command mann')
+
     @slash.subcommand(
         base='vplan',
         name='set_default',
@@ -98,18 +102,14 @@ if __name__ == "__main__":
         options=[{
             'name':
             'plan_id',
-            'type':
-            4,
-            'description':
-            'Name der Schule',
-            'required':
-            True,
+            'type': 4,
+            'description': 'Name der Schule',
+            'required': True,
             'choices': [{
                 'name': page['name'],
                 'value': page['id']
             } for page in PAGES['keys'].values()]
-        }],
-        subcommand_group_description='Verwalte die Pläne für diesen Server')
+        }], subcommand_group_description='Verwalte die Pläne für diesen Server')
     async def set_server_default(context, plan_id: int):
         page_db.config_server(context.guild, plan_id)
         for page in PAGES['keys'].values():
@@ -179,11 +179,10 @@ if __name__ == "__main__":
         name='add_event',
         subcommand_group='config',
         description='Plant ein neues Event auf diesem Server',
-        subcommand_group_description='Verwalte die Pläne für diesen Server',
         options=[{
             'name': 'time',
             'description':
-            'Uhreit, zu welcher gesendet wird (gerundet auf 1/4h, Format: hh:mm)',
+            'Uhrzeit, zu welcher gesendet wird (gerundet auf 1/4h, Format: hh:mm)',
             'type': 3,
             'required': True,
         }, {
@@ -198,7 +197,7 @@ if __name__ == "__main__":
             'type': 7,
             'required': False
         }])
-    async def add_event(context,
+    async def add_guild_event(context,
                         time: str,
                         klasse: str = None,
                         channel: Messageable = None):
